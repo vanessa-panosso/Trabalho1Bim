@@ -1,5 +1,9 @@
 package br.univel.comum;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -8,25 +12,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import br.univel.jshare.gui.Arquivo;
-import br.univel.jshare.gui.Cliente;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ImplServidor  extends UnicastRemoteObject implements IServer{
 
 	private int PORTA_TCPIP;
 
-	protected ImplServidor() throws RemoteException {
+	public ImplServidor() throws RemoteException {
 		super();
 	}
 
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
+		ImplServidor servidor = new ImplServidor();
+		
+		IServer servico;
 		try {
-			Registry registry = LocateRegistry.createRegistry(PORTA_TCPIP);
-			registry.rebind(IServer.NOME_SERVICO, this);
-
+			servico = (IServer) UnicastRemoteObject
+					.exportObject(servidor, 0);
+			Registry registry = LocateRegistry
+					.createRegistry(1818);
+			registry
+				.rebind(servico.NOME_SERVICO, servico);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -61,21 +69,37 @@ public class ImplServidor  extends UnicastRemoteObject implements IServer{
 	}
 
 	@Override
-	public Map<Cliente, List<Arquivo>> procurarArquivo(String query, TipoFiltro tipoFiltro, String filtro)
-			throws RemoteException {
-		// TODO Auto-generated method stub
+	public Map<Cliente, List<Arquivo>> procurarArquivo(String query, TipoFiltro tipoFiltro, String filtro) throws RemoteException {
+		List<String> resultado = new ArrayList<>();
+			
+		Pattern pat = Pattern.compile(".*" + query + ".*");
+		
+		for (String nome : Lista.DADOS) {
+			Matcher m = pat.matcher(nome.toLowerCase());
+			if (m.matches()) {
+				resultado.add(nome);
+			}
+		}
+		
+		for (String res : resultado) {
+			System.out.println(res);
+		}
 		return null;
 	}
 
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		Path path = Paths.get(arq.getPath());
+		try {
+			byte[] dados = Files.readAllBytes(path);
+			return dados;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
-		// TODO Auto-generated method stub
 		
 	}
 
