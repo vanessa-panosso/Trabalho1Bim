@@ -40,32 +40,8 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 	}
 
 	@Override
-	public void publicarListaArquivos(Map<Cliente , List<Arquivo>> lista) throws RemoteException {
-		Object[][] matrix;
-
-		int tempCli = 0;
-		for (Entry<Cliente, List<Arquivo>> e : lista.entrySet()) {
-			if (e.getValue() != null) {
-				tempCli += e.getValue().size();
-			}
-		}
-
-		matrix = new Object[tempCli][4];
+	public void publicarListaArquivos(Cliente c , List<Arquivo> lista) throws RemoteException {
 		
-		List<Cliente> list = new ArrayList<>(lista.keySet());
-		
-		list.sort((o1, o2) -> o1.getNome().compareTo(o2.getNome()));
-		
-		int cont = 0;
-		for (Cliente cli : list) {
-			for (Arquivo arq : lista.get(cli)) {
-				matrix[cont][0] = cli.getId();
-				matrix[cont][1] = cli.getNome();
-				matrix[cont][2] = arq.getId();
-				matrix[cont][3] = arq.getNome();
-				cont++;
-			}
-		}
 	}
 
 	@Override
@@ -73,7 +49,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 		List<String> resultado = new ArrayList<>();
 			
 		Pattern pat = Pattern.compile(".*" + query + ".*");
-		
+		if(tipoFiltro.NOME.equals(tipoFiltro)){
 		for (String nome : Lista.DADOS) {
 			Matcher m = pat.matcher(nome.toLowerCase());
 			if (m.matches()) {
@@ -85,7 +61,42 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 			System.out.println(res);
 		}
 		
+		}else if (tipoFiltro.EXTENSAO.equals(tipoFiltro)){
+			for (String extensao : Lista.DADOS) {
+				Matcher m = pat.matcher(extensao.toLowerCase());
+				if (m.matches()) {
+					resultado.add(extensao);
+				}
+			}
+			
+			for (String res : resultado) {
+				System.out.println(res);
+			}
+		}else if (tipoFiltro.TAMANHO_MIN.equals(tipoFiltro)){
+			for (String tamanho_min : Lista.DADOS) {
+				Matcher m = pat.matcher(tamanho_min.toLowerCase());
+				if (m.matches()) {
+					resultado.add(tamanho_min);
+				}
+			}
+			
+			for (String res : resultado) {
+				System.out.println(res);
+			}
+		}else if(tipoFiltro.TAMANHO_MAX.equals(tipoFiltro)){
+			for (String tamanho_max : Lista.DADOS) {
+				Matcher m = pat.matcher(tamanho_max.toLowerCase());
+				if (m.matches()) {
+					resultado.add(tamanho_max);
+				}
+			}
+			
+			for (String res : resultado) {
+				System.out.println(res);
+			}
+		} 
 		return null;
+
 	}
 
 	@Override
