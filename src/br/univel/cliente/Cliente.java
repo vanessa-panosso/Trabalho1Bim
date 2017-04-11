@@ -1,4 +1,4 @@
-package br.univel.comum;
+package br.univel.cliente;
 
 import java.io.Serializable;
 

@@ -7,12 +7,10 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
 
-
+import br.univel.cliente.Cliente;
+import br.univel.cliente.ClienteCon;
 import br.univel.comum.Arquivo;
-import br.univel.comum.Cliente;
-import br.univel.comum.IServer;
-import br.univel.comum.ImplServidor;
-import br.univel.comum.ResultadoModel;
+
 import java.awt.GridBagLayout;
 import javax.swing.JLabel;
 import java.awt.GridBagConstraints;
@@ -27,6 +25,7 @@ import java.util.Map;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -41,16 +40,19 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
 import br.univel.comum.TipoFiltro;
+import br.univel.servidor.IServer;
+import br.univel.servidor.ImplServidor;
+import javax.swing.ListSelectionModel;
 
 public class TelaPrincipal extends JFrame {
 
 	private JPanel contentPane;
-	private JTable table;
 	private JTextField tf_Nome;
 	private JTextField tf_Ip;
 	private JTextField tf_Porta;
 	private JTextField tf_Pesquisar;
 	private JTextField tf_Pasta;
+	private JTable table;
 
 	/**
 	 * Launch the application.
@@ -74,9 +76,10 @@ public class TelaPrincipal extends JFrame {
 	 */
 	public TelaPrincipal() throws RemoteException {
 		setBackground(Color.LIGHT_GRAY);
-		Cliente cliente = new Cliente();
 		IServer servidor = new ImplServidor();
-		
+		Cliente c = new Cliente();
+		Arquivo arq = new Arquivo();
+
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 687, 442);
 		contentPane = new JPanel();
@@ -85,8 +88,8 @@ public class TelaPrincipal extends JFrame {
 		GridBagLayout gbl_contentPane = new GridBagLayout();
 		gbl_contentPane.columnWidths = new int[]{0, 0, 0, 0, 0, 0, 0};
 		gbl_contentPane.rowHeights = new int[]{0, 14, 0, 0, 0, 97, 0, 0};
-		gbl_contentPane.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
-		gbl_contentPane.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
+		gbl_contentPane.columnWeights = new double[]{1.0, 1.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_contentPane.rowWeights = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, Double.MIN_VALUE};
 		contentPane.setLayout(gbl_contentPane);
 		
 		JPanel panel = new JPanel();
@@ -196,9 +199,13 @@ public class TelaPrincipal extends JFrame {
 		btnConectar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
+					ClienteCon cli = new ClienteCon();
+					c.setIp(tf_Ip.getText());
 					
-					servidor.registrarCliente(cliente);
-				} catch (RemoteException e1) {
+					c.setPorta(Integer.parseInt(tf_Porta.getText()));
+					c.setNome(tf_Nome.getText());
+					cli.conectar(c);
+				} catch (RemoteException | NotBoundException e1) {
 					e1.printStackTrace();
 				}
 			}
@@ -214,7 +221,7 @@ public class TelaPrincipal extends JFrame {
 		btnDesconectar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					servidor.desconectar(cliente);
+					servidor.desconectar(c);
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
@@ -229,17 +236,11 @@ public class TelaPrincipal extends JFrame {
 		JButton btnIniciarServidor = new JButton("Iniciar Servidor");
 		btnIniciarServidor.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				IServer servico;
 				try {
-					servico = (IServer) UnicastRemoteObject.exportObject(servidor, 0);
-					Registry registry = LocateRegistry.createRegistry(1818);
-
-					registry.rebind(IServer.NOME_SERVICO, servico);
+					servidor.registrarCliente(c);
 				} catch (RemoteException e) {
 					e.printStackTrace();
-				}
-
-				
+				}	
 			}
 		});
 		GridBagConstraints gbc_btnIniciarServidor = new GridBagConstraints();
@@ -278,7 +279,7 @@ public class TelaPrincipal extends JFrame {
 		btnPesquisar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				cb_Filtro.getSelectedItem();
-				//servidor.procurarArquivo(tf_Pesquisar.getText(), TipoFiltro., cb_Filtro.getToolTipText());
+				//servidor.procurarArquivo(tf_Pesquisar.getText(), TipoFiltro, cb_Filtro.getToolTipText());
 			}
 		});
 		GridBagConstraints gbc_btnPesquisar = new GridBagConstraints();
@@ -314,22 +315,32 @@ public class TelaPrincipal extends JFrame {
 		table = new JTable();
 		table.setModel(new DefaultTableModel(
 			new Object[][] {
-				{null, null},
 			},
 			new String[] {
-				"Cliente", "Arquivo"
+				"Cliente", "New column", "Arquivo"
 			}
 		) {
 			boolean[] columnEditables = new boolean[] {
-				false, false
+				false, true, false
 			};
 			public boolean isCellEditable(int row, int column) {
 				return columnEditables[column];
 			}
 		});
-		scrollPane.setRowHeaderView(table);
+		table.getColumnModel().getColumn(0).setResizable(false);
+		table.getColumnModel().getColumn(2).setResizable(false);
+		scrollPane.setColumnHeaderView(table);
 		
 		JButton btnDownload = new JButton("Download");
+		btnDownload.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					servidor.baixarArquivo(c, arq);
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+			}
+		});
 		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
 		gbc_btnDownload.insets = new Insets(0, 0, 5, 0);
 		gbc_btnDownload.gridx = 5;

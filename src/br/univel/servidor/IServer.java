@@ -1,9 +1,13 @@
-package br.univel.comum;
+package br.univel.servidor;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Map;
+
+import br.univel.cliente.Cliente;
+import br.univel.comum.Arquivo;
+import br.univel.comum.TipoFiltro;
 
 public interface IServer extends Remote {
 

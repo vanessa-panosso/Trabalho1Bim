@@ -1,4 +1,4 @@
-package br.univel.comum;
+package br.univel.view;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.swing.table.AbstractTableModel;
+
+import br.univel.cliente.Cliente;
+import br.univel.comum.Arquivo;
 
 public class ResultadoModel extends AbstractTableModel {
 	private Object[][] matrix;
