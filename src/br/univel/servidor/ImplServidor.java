@@ -1,11 +1,9 @@
 package br.univel.servidor;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -14,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import br.univel.cliente.Cliente;
 import br.univel.comum.Arquivo;
@@ -24,6 +23,7 @@ import br.univel.comum.TipoFiltro;
 public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 
 	private int PORTA_TCPIP;
+    Map<Cliente, List<Arquivo>> padraoMap = new HashMap<>();
 
 	public ImplServidor() throws RemoteException {
 		super();
@@ -44,7 +44,15 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 
 	@Override
 	public void publicarListaArquivos(Cliente c , List<Arquivo> lista) throws RemoteException {
-		
+		if (padraoMap.containsKey(c)) {
+            padraoMap.entrySet().forEach(map -> {
+                if (map.getKey().equals(c)) {
+                    map.setValue(lista);
+                }
+            });
+
+        } else {
+        }
 	}
 
 	@Override
@@ -111,7 +119,13 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 	
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
-		
+
+        if (padraoMap.containsKey(c)) {
+            padraoMap.remove(c);
+
+        } else {
+            
+        }
 	}
 
 }

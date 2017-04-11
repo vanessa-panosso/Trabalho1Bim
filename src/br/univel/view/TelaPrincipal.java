@@ -395,16 +395,13 @@ public class TelaPrincipal extends JFrame {
 	protected void mostraSelecionadoTabela() {
 		int linhaSelecionada = table.getSelectedRow();
 		if (linhaSelecionada < 0) {
-			System.out.println("Nenhuma selecionada");
 		} else {
 			int row = table.convertRowIndexToModel(linhaSelecionada);
 			Arquivo arq = ((ResultadoModel)table.getModel()).getMeuItem(row);
-			System.out.println(arq.getId());
 			
 		}
 	}
 
-	
 	protected void carregar() {
 		Map<Cliente, List<Arquivo>> dados = gerarDados();
 		
@@ -435,7 +432,7 @@ public class TelaPrincipal extends JFrame {
 			
 			dados.put(cli, lista);
 		}
-		
 		return dados;
 	}
+	
 }
