@@ -53,7 +53,7 @@ public class TelaPrincipal extends JFrame {
 	private JTextField tf_Pesquisar;
 	private JTextField tf_Pasta;
 	private JTable table;
-
+	private String teste; 
 	/**
 	 * Launch the application.
 	 */
