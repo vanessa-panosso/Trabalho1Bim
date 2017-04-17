@@ -15,6 +15,8 @@ import java.awt.GridBagLayout;
 import javax.swing.JLabel;
 import java.awt.GridBagConstraints;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+
 import java.awt.Insets;
 import javax.swing.JButton;
 import javax.swing.JTable;
@@ -27,22 +29,18 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.awt.event.ActionEvent;
 import javax.swing.JList;
+
 import java.awt.Color;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JRadioButton;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
 import br.univel.comum.TipoFiltro;
 import br.univel.servidor.IServer;
 import br.univel.servidor.ImplServidor;
-import javax.swing.ListSelectionModel;
 
 public class TelaPrincipal extends JFrame {
 
@@ -53,7 +51,8 @@ public class TelaPrincipal extends JFrame {
 	private JTextField tf_Pesquisar;
 	private JTextField tf_Pasta;
 	private JTable table;
-	private String teste; 
+	private Map<Cliente, List<Arquivo>> mapaArquivos = new HashMap<Cliente, List<Arquivo>>();
+
 	/**
 	 * Launch the application.
 	 */
@@ -236,11 +235,7 @@ public class TelaPrincipal extends JFrame {
 		JButton btnIniciarServidor = new JButton("Iniciar Servidor");
 		btnIniciarServidor.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				try {
-					servidor.registrarCliente(c);
-				} catch (RemoteException e) {
-					e.printStackTrace();
-				}	
+					((ImplServidor) servidor).iniciarServidor();
 			}
 		});
 		GridBagConstraints gbc_btnIniciarServidor = new GridBagConstraints();
@@ -278,8 +273,17 @@ public class TelaPrincipal extends JFrame {
 		JButton btnPesquisar = new JButton("Pesquisar");
 		btnPesquisar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				cb_Filtro.getSelectedItem();
-				//servidor.procurarArquivo(tf_Pesquisar.getText(), TipoFiltro, cb_Filtro.getToolTipText());
+				ResultadoModel modelo;
+						try {
+							mapaArquivos = servidor.procurarArquivo(tf_Pesquisar.getText(),(TipoFiltro) cb_Filtro.getSelectedItem(), tf_Pesquisar.getText());
+							modelo = new ResultadoModel(mapaArquivos);
+							table.removeAll();
+							table.setModel(modelo);
+							table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+						} catch (RemoteException e1) {
+							e1.printStackTrace();
+						}
+				
 			}
 		});
 		GridBagConstraints gbc_btnPesquisar = new GridBagConstraints();

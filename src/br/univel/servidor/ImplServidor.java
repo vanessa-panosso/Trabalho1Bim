@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import br.univel.cliente.Cliente;
 import br.univel.comum.Arquivo;
@@ -20,78 +22,73 @@ import br.univel.comum.Md5Util;
 import br.univel.comum.TipoFiltro;
 
 
-public class ImplServidor  extends UnicastRemoteObject  implements IServer{
+public class ImplServidor  extends UnicastRemoteObject  implements IServer, Runnable{
 
 	private int PORTA_TCPIP;
-    Map<Cliente, List<Arquivo>> padraoMap = new HashMap<>();
-
+    private Map<Cliente, List<Arquivo>> mapArquivo = new HashMap<>();
+    private List<Cliente> listaCliente = new ArrayList<>();
+    private Arquivo arq;
 	public ImplServidor() throws RemoteException {
 		super();
+		new Thread(this).start();
 	}
-
-	@Override
-	public void registrarCliente(Cliente c) throws RemoteException {
-		IServer servico;
+	public void iniciarServidor(){
 		try {
-			servico = (IServer) UnicastRemoteObject.exportObject(this, 0);
 			Registry registry = LocateRegistry.createRegistry(1818);
-			registry.rebind(IServer.NOME_SERVICO, servico);
+			registry.rebind(IServer.NOME_SERVICO, this);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
+	}
+	@Override
+	public void registrarCliente(Cliente c) throws RemoteException {
+		listaCliente.add(c);
 
 	}
 
 	@Override
 	public void publicarListaArquivos(Cliente c , List<Arquivo> lista) throws RemoteException {
-		if (padraoMap.containsKey(c)) {
-            padraoMap.entrySet().forEach(map -> {
-                if (map.getKey().equals(c)) {
-                    map.setValue(lista);
-                }
-            });
-
-        } else {
-        }
+		mapArquivo.put(c, lista);
 	}
 
 	@Override
 	public Map<Cliente, List<Arquivo>> procurarArquivo(final String query, final TipoFiltro tipoFiltro, final String filtro) throws RemoteException {
-        Map<Cliente, List<Arquivo>> resultadoMap = new HashMap<>();
-        Map<Cliente, List<Arquivo>> padraoMap = new HashMap<>();
-
-        padraoMap.forEach((k, value) -> {
-            List<Arquivo> list = new ArrayList<>();
-
-            value.forEach(v -> {
-            	if(TipoFiltro.NOME.equals(tipoFiltro)){
-                  if (v.getNome().toLowerCase().contains(query.toLowerCase())) {
-                    list.add(v);
-                  }
-            	} else if (TipoFiltro.EXTENSAO.equals(tipoFiltro)){
-                    if (v.getExtensao().toLowerCase().contains(filtro.toLowerCase())) {
-                      if (v.getNome().toLowerCase().contains(query.toLowerCase())) {
-                         list.add(v);
-                      }
+        Map<Cliente, List<Arquivo>> mapResultado = new HashMap<>();
+        
+        Pattern pat = Pattern.compile("." + query + ".");
+        
+        List<Arquivo> listaArquivo = new ArrayList<>();
+        
+        mapArquivo.forEach((cliente, arquivo) -> {
+        	
+          arquivo.forEach(valor -> {
+        	Matcher matcher = pat.matcher(valor.getNome());
+            if(matcher.matches()){	
+            	if (TipoFiltro.EXTENSAO.equals(tipoFiltro)){
+                    if (valor.getExtensao().toLowerCase().contains(filtro.toLowerCase())) {
+                         listaArquivo.add(valor);
+                    } else if (filtro.isEmpty()){
+                    	listaArquivo.add(valor);
                     }
             	} else if (TipoFiltro.TAMANHO_MAX.equals(tipoFiltro)){
-                    if (v.getTamanho() >= Integer.valueOf(filtro)) {
-                      if (v.getNome().toLowerCase().contains(query.toLowerCase())) {
-                         list.add(v);
-                      }
+                    if (valor.getTamanho() >= Integer.valueOf(filtro)) {
+                         listaArquivo.add(valor);
+                    }else if (filtro.isEmpty()){
+                    	listaArquivo.add(valor);
                     }
             	}  
             	else if (TipoFiltro.TAMANHO_MAX.equals(tipoFiltro)){
-                    if (v.getTamanho() <= Integer.valueOf(filtro)) {
-                       if (v.getNome().toLowerCase().contains(query.toLowerCase())) {
-                         list.add(v);
-                       }
+                    if (valor.getTamanho() <= Integer.valueOf(filtro)) {
+                         listaArquivo.add(valor);
+                    } else if(filtro.isEmpty()){
+                    	listaArquivo.add(valor);
                     }
-            	}   
-            });
-            resultadoMap.put(k, list);
+            	} 
+            }	
+          });
+          mapResultado.put(cliente, listaArquivo);
         });
-        return resultadoMap;	
+        return mapResultado;	
 	}
 
 	@Override
@@ -120,12 +117,16 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
 
-        if (padraoMap.containsKey(c)) {
-            padraoMap.remove(c);
+        if (mapArquivo.containsKey(c)) {
+            mapArquivo.remove(c);
 
         } else {
             
         }
+	}
+	@Override
+	public void run() {
+		
 	}
 
 }
