@@ -1,5 +1,6 @@
 package br.univel.servidor;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,10 +10,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,17 +21,41 @@ import br.univel.cliente.Cliente;
 import br.univel.comum.Arquivo;
 import br.univel.comum.Md5Util;
 import br.univel.comum.TipoFiltro;
+import br.univel.view.TelaPrincipal;
 
 
-public class ImplServidor  extends UnicastRemoteObject  implements IServer, Runnable{
+public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 
-	private int PORTA_TCPIP;
     private Map<Cliente, List<Arquivo>> mapArquivo = new HashMap<>();
     private List<Cliente> listaCliente = new ArrayList<>();
-    private Arquivo arq;
 	public ImplServidor() throws RemoteException {
 		super();
-		new Thread(this).start();
+	}
+	public  void publicarMinhaLista(final String dir) throws RemoteException {
+		File diretorio = new File(dir);
+		List<Arquivo> listaArquivo = new ArrayList<>();
+		if (!diretorio.exists()) {
+			diretorio.mkdir();
+		}
+		File arquivos[] = diretorio.listFiles();
+
+		listaArquivo.clear();
+
+		for (int i = 0; i < arquivos.length; i++) {
+			File file = arquivos[i];
+			Arquivo arquivo = new Arquivo();
+			arquivo.setNome(file.getName().substring(0, file.getName().lastIndexOf(".")));
+			arquivo.setExtensao(file.getName().substring((file.getName().lastIndexOf(".") + 1)));
+			arquivo.setPath(file.getPath());
+			arquivo.setDataHoraModificacao(new Date());
+			arquivo.setTamanho(file.length());
+			arquivo.setMd5(Md5Util.getMD5Checksum(file.getAbsolutePath()));
+			arquivo.setId(i + 1);
+			
+			TelaPrincipal.getListaArquivos().add(arquivo);
+		}
+		
+		publicarListaArquivos(TelaPrincipal.getMeuCliente(), TelaPrincipal.getListaArquivos());
 	}
 	public void iniciarServidor(){
 		try {
@@ -57,11 +82,12 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer, Runn
         
         Pattern pat = Pattern.compile("." + query + ".");
         
-        List<Arquivo> listaArquivo = new ArrayList<>();
         
-        mapArquivo.forEach((cliente, arquivo) -> {
+        
+        mapArquivo.entrySet().forEach(cliente -> {
+        	List<Arquivo> listaArquivo = new ArrayList<>();
+          cliente.getValue().forEach(valor -> {
         	
-          arquivo.forEach(valor -> {
         	Matcher matcher = pat.matcher(valor.getNome());
             if(matcher.matches()){	
             	if (TipoFiltro.EXTENSAO.equals(tipoFiltro)){
@@ -84,49 +110,38 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer, Runn
                     	listaArquivo.add(valor);
                     }
             	} 
+            }else if(query.isEmpty()){
+            	listaArquivo.add(valor);
             }	
           });
-          mapResultado.put(cliente, listaArquivo);
+          mapResultado.put(cliente.getKey(), listaArquivo);
         });
         return mapResultado;	
 	}
 
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
-		Path path = Paths.get(arq.getPath());
-		try {
-			byte[] dados = Files.readAllBytes(path);
-			if (dados == null) {
-				System.out.println("veio nulo");
-			} else {
+		byte[] dados;
+        Path path = Paths.get(arq.getPath());
 
-				String bytesBaixado = Md5Util.getMD5Checksum(arq.getPath());
-				if (arq.getMd5().equals(bytesBaixado)) {
-					
-					//escreva(new File("cópia_de_" + arq.getNome()), dados);
-				} else { 
-					//escreva(new File("cópia_de_" + arq.getNome()), dados);
-				}
-			}
-			return dados;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+        try {
+            dados = Files.readAllBytes(path);
+            return dados;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 	}
 	
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
-
+		
         if (mapArquivo.containsKey(c)) {
             mapArquivo.remove(c);
 
-        } else {
-            
-        }
+        } 
+        if (listaCliente.contains(c)) {
+			listaCliente.remove(c);
+		}
 	}
-	@Override
-	public void run() {
-		
-	}
-
+	
 }

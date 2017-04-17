@@ -50,10 +50,4 @@ public class Md5Util {
 		return result;
 	}
 
-	public static void main(String args[]) {
-		
-		String md5 = Md5Util.getMD5Checksum("bull.jpg");
-		System.out.println(md5);
-
-	}
 }

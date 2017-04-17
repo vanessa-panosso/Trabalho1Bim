@@ -10,7 +10,10 @@ import javax.swing.table.AbstractTableModel;
 import br.univel.cliente.Cliente;
 import br.univel.comum.Arquivo;
 
+
 public class ResultadoModel extends AbstractTableModel {
+
+	private static final long serialVersionUID = 1L;
 	private Object[][] matrix;
 
 	public ResultadoModel(Map<Cliente, List<Arquivo>> dados) {
@@ -22,19 +25,21 @@ public class ResultadoModel extends AbstractTableModel {
 			}
 		}
 
-		matrix = new Object[tempCli][4];
-		
+		matrix = new Object[tempCli][6];
+
 		List<Cliente> list = new ArrayList<>(dados.keySet());
-		
+
 		list.sort((o1, o2) -> o1.getNome().compareTo(o2.getNome()));
-		
+
 		int cont = 0;
 		for (Cliente cli : list) {
 			for (Arquivo arq : dados.get(cli)) {
-				matrix[cont][0] = cli.getId();
-				matrix[cont][1] = cli.getNome();
-				matrix[cont][2] = arq.getId();
-				matrix[cont][3] = arq.getNome();
+				matrix[cont][0] = cli.getNome();
+				matrix[cont][1] = cli.getIp();
+				matrix[cont][2] = arq.getNome();
+				matrix[cont][3] = arq.getExtensao();
+				matrix[cont][4] = arq;
+				matrix[cont][5] = cli;
 				cont++;
 			}
 		}
@@ -42,9 +47,23 @@ public class ResultadoModel extends AbstractTableModel {
 
 	@Override
 	public int getColumnCount() {
-		return matrix[0].length;
+		return 4;
 	}
-
+	@Override
+	public String getColumnName(int arg0) {
+		switch(arg0){
+			case 0:
+				return "Nome";
+			case 1:
+				return "IP";
+			case 2:
+				return "Nome do Arquivo";
+			case 3:
+				return "Extensao";
+			
+		}
+		return null;
+	}
 	@Override
 	public int getRowCount() {
 		return matrix.length;
@@ -60,6 +79,5 @@ public class ResultadoModel extends AbstractTableModel {
 		arq.setId(row);
 		return arq;
 	}
-
 
 }

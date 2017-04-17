@@ -10,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 import br.univel.cliente.Cliente;
 import br.univel.cliente.ClienteCon;
 import br.univel.comum.Arquivo;
+import br.univel.comum.Md5Util;
 
 import java.awt.GridBagLayout;
 import javax.swing.JLabel;
@@ -18,6 +19,8 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 
 import java.awt.Insets;
+import java.awt.TextArea;
+
 import javax.swing.JButton;
 import javax.swing.JTable;
 import java.util.ArrayList;
@@ -27,10 +30,20 @@ import java.util.Map;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.awt.event.ActionEvent;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 
 import java.awt.Color;
 
@@ -51,6 +64,13 @@ public class TelaPrincipal extends JFrame {
 	private JTextField tf_Pesquisar;
 	private JTextField tf_Pasta;
 	private JTable table;
+	private ImplServidor servidor = new ImplServidor();
+	private Cliente c = new Cliente();
+	private Arquivo arq = new Arquivo();
+	private static  List<Arquivo> listaArquivos = new ArrayList<Arquivo>();
+	private static  Cliente meuCliente;
+	private static String meuIp;
+
 	private Map<Cliente, List<Arquivo>> mapaArquivos = new HashMap<Cliente, List<Arquivo>>();
 
 	/**
@@ -75,10 +95,7 @@ public class TelaPrincipal extends JFrame {
 	 */
 	public TelaPrincipal() throws RemoteException {
 		setBackground(Color.LIGHT_GRAY);
-		IServer servidor = new ImplServidor();
-		Cliente c = new Cliente();
-		Arquivo arq = new Arquivo();
-
+		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 687, 442);
 		contentPane = new JPanel();
@@ -123,6 +140,7 @@ public class TelaPrincipal extends JFrame {
 		gbc_tf_Nome.gridy = 0;
 		panel.add(tf_Nome, gbc_tf_Nome);
 		tf_Nome.setColumns(10);
+		tf_Nome.setText("Vanessa");
 		
 		JRadioButton rdbtnServidor = new JRadioButton("Cliente e Servidor");
 		GridBagConstraints gbc_rdbtnServidor = new GridBagConstraints();
@@ -158,7 +176,15 @@ public class TelaPrincipal extends JFrame {
 		gbc_tf_Ip.gridy = 1;
 		panel.add(tf_Ip, gbc_tf_Ip);
 		tf_Ip.setColumns(10);
-		
+
+		InetAddress IP;
+		try {
+			IP = InetAddress.getLocalHost();
+			meuIp = IP.getHostAddress();
+		} catch (UnknownHostException e2) {
+			e2.printStackTrace();
+		}
+		tf_Ip.setText(meuIp);
 		JLabel lblPorta = new JLabel("Porta:");
 		GridBagConstraints gbc_lblPorta = new GridBagConstraints();
 		gbc_lblPorta.anchor = GridBagConstraints.EAST;
@@ -175,6 +201,7 @@ public class TelaPrincipal extends JFrame {
 		gbc_tf_Porta.gridy = 1;
 		panel.add(tf_Porta, gbc_tf_Porta);
 		tf_Porta.setColumns(10);
+		tf_Porta.setText("1818");
 		
 		JLabel lblPasta = new JLabel("Pasta:");
 		GridBagConstraints gbc_lblPasta = new GridBagConstraints();
@@ -193,17 +220,22 @@ public class TelaPrincipal extends JFrame {
 		gbc_tf_Pasta.gridy = 1;
 		panel.add(tf_Pasta, gbc_tf_Pasta);
 		tf_Pasta.setColumns(10);
+		tf_Pasta.setText("C:\\jshare\\upload\\");
 		
+		
+		meuCliente = new Cliente();
+		meuCliente.setIp(tf_Ip.getText());
+		meuCliente.setNome(tf_Nome.getText());
+		meuCliente.setPorta(Integer.parseInt(tf_Porta.getText()));
 		JButton btnConectar = new JButton("Conectar");
 		btnConectar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				Registry registry;
 				try {
-					ClienteCon cli = new ClienteCon();
-					c.setIp(tf_Ip.getText());
-					
-					c.setPorta(Integer.parseInt(tf_Porta.getText()));
-					c.setNome(tf_Nome.getText());
-					cli.conectar(c);
+						registry = LocateRegistry.getRegistry(tf_Ip.getText(), Integer.parseInt(tf_Porta.getText()));
+						IServer servico = (IServer) registry.lookup(IServer.NOME_SERVICO);
+						servidor.publicarMinhaLista(tf_Pasta.getText());
+						servidor.registrarCliente(meuCliente);
 				} catch (RemoteException | NotBoundException e1) {
 					e1.printStackTrace();
 				}
@@ -278,6 +310,7 @@ public class TelaPrincipal extends JFrame {
 							mapaArquivos = servidor.procurarArquivo(tf_Pesquisar.getText(),(TipoFiltro) cb_Filtro.getSelectedItem(), tf_Pesquisar.getText());
 							modelo = new ResultadoModel(mapaArquivos);
 							table.removeAll();
+
 							table.setModel(modelo);
 							table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 						} catch (RemoteException e1) {
@@ -315,9 +348,9 @@ public class TelaPrincipal extends JFrame {
 		gbc_scrollPane.gridx = 0;
 		gbc_scrollPane.gridy = 3;
 		contentPane.add(scrollPane, gbc_scrollPane);
-		
+		ResultadoModel modelo = new ResultadoModel(mapaArquivos);
 		table = new JTable();
-		carregar();
+		table.setModel(modelo);
 		scrollPane.setViewportView(table);
 		table.addMouseListener(new MouseAdapter() {
 			@Override
@@ -330,11 +363,25 @@ public class TelaPrincipal extends JFrame {
 		JButton btnDownload = new JButton("Download");
 		btnDownload.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				try {
-					servidor.baixarArquivo(c, arq);
-				} catch (RemoteException e) {
-					e.printStackTrace();
-				}
+				
+					Integer linha = table.getSelectedRow();
+					Cliente cliente = (Cliente) table.getModel().getValueAt(linha, 5);
+					Arquivo arquivo = (Arquivo) table.getModel().getValueAt(linha, 4);
+
+					Registry registry;
+					try {
+						registry = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
+						IServer server = (IServer) registry.lookup(IServer.NOME_SERVICO);
+
+						ler(arquivo, server.baixarArquivo(cliente, arquivo));
+						servidor.publicarMinhaLista(tf_Pasta.getText());
+
+					} catch (RemoteException e) {
+						e.printStackTrace();
+					} catch (NotBoundException e) {
+						e.printStackTrace();
+					}
+				
 			}
 		});
 		GridBagConstraints gbc_btnDownload = new GridBagConstraints();
@@ -351,42 +398,12 @@ public class TelaPrincipal extends JFrame {
 		gbc_scrollPane_1.gridy = 6;
 		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 		
-		JList list = new JList();
+		TextArea list = new TextArea();
 		list.setForeground(new Color(0, 204, 51));
 		list.setBackground(new Color(0, 0, 0));
 		scrollPane_1.setColumnHeaderView(list);
 	}
-	public void TelaMostraArquivos() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 300);
-		contentPane = new JPanel();
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		contentPane.setLayout(new BorderLayout(0, 0));
-		setContentPane(contentPane);
-		
-		JButton btnCarregar = new JButton("Carregar");
-		btnCarregar.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				carregar();
-			}
-		});
-		contentPane.add(btnCarregar, BorderLayout.NORTH);
-		
-		JScrollPane scrollPane = new JScrollPane();
-		contentPane.add(scrollPane, BorderLayout.CENTER);
-		
-		table = new JTable();
-		scrollPane.setViewportView(table);
-		
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() >= 2) {
-					mostraSelecionadoTabela();
-				}
-			}
-		});
-	}
+	
 
 	protected void mostraSelecionadoTabela() {
 		int linhaSelecionada = table.getSelectedRow();
@@ -398,37 +415,31 @@ public class TelaPrincipal extends JFrame {
 		}
 	}
 
-	protected void carregar() {
-		Map<Cliente, List<Arquivo>> dados = gerarDados();
-		
-		ResultadoModel modelo = new ResultadoModel(dados);
-		
-		table.setModel(modelo);
-		
-	}
 
-	private Map<Cliente, List<Arquivo>> gerarDados() {
+	public void ler(Arquivo arq, byte[] dados) {
+		try {
+			File arquivo = new File(tf_Pasta.getText() + " " + arq.getNome() + "teste" + "." + arq.getExtensao());
+			Files.write(Paths.get(arquivo.getPath()), dados, StandardOpenOption.CREATE);
 
-		Map<Cliente, List<Arquivo>> dados = new HashMap<>();
-		
-		for (int c = 1; c <= 100; c++) {
-			
-			Cliente cli = new Cliente();
-			cli.setId(c);
-			cli.setNome("Cliente " + c);
-			
-			List<Arquivo> lista = new ArrayList<>();
-			for (int a = 1; a <= 100; a++) {
-				Arquivo arq = new Arquivo();
-				arq.setId(1);
-				arq.setNome("Arquivo " + a);
-				
-				lista.add(arq);
+			String md5Novo = Md5Util.getMD5Checksum(arquivo.getAbsolutePath());
+			if (!md5Novo.equals(arq.getMd5())) {
+				JOptionPane.showMessageDialog(null, String.format(
+						"Arquivo corrompido!", arq.getNome()));
+			} else {
+				JOptionPane.showMessageDialog(null,
+						String.format("O arquivo %s foi baixado com sucesso!", arq.getNome()));
 			}
-			
-			dados.put(cli, lista);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
-		return dados;
 	}
-	
+	public synchronized static List<Arquivo> getListaArquivos() {
+		return listaArquivos;
+	}
+	public static Cliente getMeuCliente() {
+		return meuCliente;
+	}
+	public synchronized  void setListaArquivos(List<Arquivo> listaArquivos) {
+		listaArquivos = listaArquivos;
+	}
 }

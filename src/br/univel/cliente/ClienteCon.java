@@ -19,6 +19,7 @@ public class ClienteCon {
 			try {
 				registry = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
 				IServer servico = (IServer) registry.lookup(IServer.NOME_SERVICO);
+				servico.registrarCliente(cliente);
 				retorno = cliente.getNome() + "se registrou";
 			} catch (RemoteException | NotBoundException e) {
 				retorno = "Erro ao se conectar";
