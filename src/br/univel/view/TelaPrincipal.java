@@ -23,6 +23,8 @@ import java.awt.TextArea;
 
 import javax.swing.JButton;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +74,7 @@ public class TelaPrincipal extends JFrame {
 	private static String meuIp;
 
 	private Map<Cliente, List<Arquivo>> mapaArquivos = new HashMap<Cliente, List<Arquivo>>();
+	private static JTextArea log;
 
 	/**
 	 * Launch the application.
@@ -234,8 +237,8 @@ public class TelaPrincipal extends JFrame {
 				try {
 						registry = LocateRegistry.getRegistry(tf_Ip.getText(), Integer.parseInt(tf_Porta.getText()));
 						IServer servico = (IServer) registry.lookup(IServer.NOME_SERVICO);
-						servidor.publicarMinhaLista(tf_Pasta.getText());
-						servidor.registrarCliente(meuCliente);
+						servidor.meusArquivos(tf_Pasta.getText());
+						servico.registrarCliente(meuCliente);
 				} catch (RemoteException | NotBoundException e1) {
 					e1.printStackTrace();
 				}
@@ -374,7 +377,7 @@ public class TelaPrincipal extends JFrame {
 						IServer server = (IServer) registry.lookup(IServer.NOME_SERVICO);
 
 						ler(arquivo, server.baixarArquivo(cliente, arquivo));
-						servidor.publicarMinhaLista(tf_Pasta.getText());
+						servidor.meusArquivos(tf_Pasta.getText());
 
 					} catch (RemoteException e) {
 						e.printStackTrace();
@@ -398,10 +401,10 @@ public class TelaPrincipal extends JFrame {
 		gbc_scrollPane_1.gridy = 6;
 		contentPane.add(scrollPane_1, gbc_scrollPane_1);
 		
-		TextArea list = new TextArea();
-		list.setForeground(new Color(0, 204, 51));
-		list.setBackground(new Color(0, 0, 0));
-		scrollPane_1.setColumnHeaderView(list);
+		log = new JTextArea();
+		log.setForeground(new Color(0, 204, 51));
+		log.setBackground(new Color(0, 0, 0));
+		scrollPane_1.setColumnHeaderView(log);
 	}
 	
 
@@ -411,7 +414,6 @@ public class TelaPrincipal extends JFrame {
 		} else {
 			int row = table.convertRowIndexToModel(linhaSelecionada);
 			Arquivo arq = ((ResultadoModel)table.getModel()).getMeuItem(row);
-			
 		}
 	}
 
@@ -427,7 +429,7 @@ public class TelaPrincipal extends JFrame {
 						"Arquivo corrompido!", arq.getNome()));
 			} else {
 				JOptionPane.showMessageDialog(null,
-						String.format("O arquivo %s foi baixado com sucesso!", arq.getNome()));
+						String.format("O arquivo foi baixado com sucesso!", arq.getNome()));
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -435,7 +437,14 @@ public class TelaPrincipal extends JFrame {
 	}
 	public synchronized static List<Arquivo> getListaArquivos() {
 		return listaArquivos;
+	};
+	public static JTextArea getTextArea(){
+		return log;
+	};
+	public void setTextArea(JTextArea log){
+		this.log = log;
 	}
+	
 	public static Cliente getMeuCliente() {
 		return meuCliente;
 	}

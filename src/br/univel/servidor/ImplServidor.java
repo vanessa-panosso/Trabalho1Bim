@@ -31,7 +31,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 	public ImplServidor() throws RemoteException {
 		super();
 	}
-	public  void publicarMinhaLista(final String dir) throws RemoteException {
+	public  void meusArquivos(String dir) throws RemoteException {
 		File diretorio = new File(dir);
 		List<Arquivo> listaArquivo = new ArrayList<>();
 		if (!diretorio.exists()) {
@@ -61,19 +61,24 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 		try {
 			Registry registry = LocateRegistry.createRegistry(1818);
 			registry.rebind(IServer.NOME_SERVICO, this);
+			TelaPrincipal.getTextArea().append(String.format("Servidor Iniciado"));
+
 		} catch (RemoteException e) {
 			e.printStackTrace();
+			TelaPrincipal.getTextArea().append(String.format("Erro iniciar servidor "));
 		}
 	}
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 		listaCliente.add(c);
+		TelaPrincipal.getTextArea().append(String.format("Cliente ", c.getNome(), "se reegistrou"));
 
 	}
 
 	@Override
 	public void publicarListaArquivos(Cliente c , List<Arquivo> lista) throws RemoteException {
 		mapArquivo.put(c, lista);
+		TelaPrincipal.getTextArea().append(String.format("Cliente ", c.getNome(), "publicou arquivo"));
 	}
 
 	@Override
@@ -81,8 +86,6 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
         Map<Cliente, List<Arquivo>> mapResultado = new HashMap<>();
         
         Pattern pat = Pattern.compile("." + query + ".");
-        
-        
         
         mapArquivo.entrySet().forEach(cliente -> {
         	List<Arquivo> listaArquivo = new ArrayList<>();
@@ -126,6 +129,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 
         try {
             dados = Files.readAllBytes(path);
+            TelaPrincipal.getTextArea().append(String.format("Cliente ", cli.getNome(), " baixou o arquivo ", arq.getNome()));
             return dados;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -142,6 +146,8 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
         if (listaCliente.contains(c)) {
 			listaCliente.remove(c);
 		}
+        TelaPrincipal.getTextArea().append(String.format("Cliente ", c.getNome(), "se desconectou"));
+
 	}
 	
 }
