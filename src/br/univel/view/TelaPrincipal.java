@@ -144,23 +144,7 @@ public class TelaPrincipal extends JFrame {
 		panel.add(tf_Nome, gbc_tf_Nome);
 		tf_Nome.setColumns(10);
 		tf_Nome.setText("Vanessa");
-		
-		JRadioButton rdbtnServidor = new JRadioButton("Cliente e Servidor");
-		GridBagConstraints gbc_rdbtnServidor = new GridBagConstraints();
-		gbc_rdbtnServidor.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnServidor.gridx = 7;
-		gbc_rdbtnServidor.gridy = 0;
-		panel.add(rdbtnServidor, gbc_rdbtnServidor);
-		
-		JRadioButton rdbtnCliente = new JRadioButton("Cliente");
-		GridBagConstraints gbc_rdbtnCliente = new GridBagConstraints();
-		gbc_rdbtnCliente.insets = new Insets(0, 0, 5, 0);
-		gbc_rdbtnCliente.gridx = 8;
-		gbc_rdbtnCliente.gridy = 0;
-		panel.add(rdbtnCliente, gbc_rdbtnCliente);
 		ButtonGroup bg = new ButtonGroup();
-		bg.add(rdbtnServidor);
-		bg.add(rdbtnCliente);
 
 		JLabel lblIp = new JLabel("IP:");
 		GridBagConstraints gbc_lblIp = new GridBagConstraints();
