@@ -357,10 +357,11 @@ public class TelaPrincipal extends JFrame {
 
 					Registry registry;
 					try {
+						//registro no cliente que tiver o arquivo 
 						registry = LocateRegistry.getRegistry(cliente.getIp(), cliente.getPorta());
 						IServer server = (IServer) registry.lookup(IServer.NOME_SERVICO);
-
-						ler(arquivo, server.baixarArquivo(cliente, arquivo));
+						// escreve o arquivo baixado (serializado) 
+						escrever(arquivo, server.baixarArquivo(cliente, arquivo));
 						servidor.meusArquivos(tf_Pasta.getText());
 
 					} catch (RemoteException e) {
@@ -402,7 +403,7 @@ public class TelaPrincipal extends JFrame {
 	}
 
 
-	public void ler(Arquivo arq, byte[] dados) {
+	public void escrever(Arquivo arq, byte[] dados) {
 		try {
 			File arquivo = new File(tf_Pasta.getText() + " " + arq.getNome() + "teste" + "." + arq.getExtensao());
 			Files.write(Paths.get(arquivo.getPath()), dados, StandardOpenOption.CREATE);

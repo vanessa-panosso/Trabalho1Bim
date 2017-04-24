@@ -28,9 +28,11 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 
     private Map<Cliente, List<Arquivo>> mapArquivo = new HashMap<>();
     private List<Cliente> listaCliente = new ArrayList<>();
+    
 	public ImplServidor() throws RemoteException {
 		super();
 	}
+	
 	public  void meusArquivos(String dir) throws RemoteException {
 		File diretorio = new File(dir);
 		List<Arquivo> listaArquivo = new ArrayList<>();
@@ -57,6 +59,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 		
 		publicarListaArquivos(TelaPrincipal.getMeuCliente(), TelaPrincipal.getListaArquivos());
 	}
+	//vai iniciar  o servidor, REBIND
 	public void iniciarServidor(){
 		try {
 			Registry registry = LocateRegistry.createRegistry(1818);
@@ -68,19 +71,20 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
 			TelaPrincipal.getTextArea().append(String.format("Erro iniciar servidor "));
 		}
 	}
+	//salva os dados do cliente na lista
 	@Override
 	public void registrarCliente(Cliente c) throws RemoteException {
 		listaCliente.add(c);
 		TelaPrincipal.getTextArea().append(String.format("Cliente ", c.getNome(), "se reegistrou"));
 
 	}
-
+	//salva no map o cliente e a lista de arquivos delel, vai publicar a lista de arquivos.
 	@Override
 	public void publicarListaArquivos(Cliente c , List<Arquivo> lista) throws RemoteException {
 		mapArquivo.put(c, lista);
 		TelaPrincipal.getTextArea().append(String.format("Cliente ", c.getNome(), "publicou arquivo"));
 	}
-
+	// faz a busca dos arquivos, conforme o filtro escolhido
 	@Override
 	public Map<Cliente, List<Arquivo>> procurarArquivo(final String query, final TipoFiltro tipoFiltro, final String filtro) throws RemoteException {
         Map<Cliente, List<Arquivo>> mapResultado = new HashMap<>();
@@ -121,7 +125,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
         });
         return mapResultado;	
 	}
-
+	//Serializa o arquivo
 	@Override
 	public byte[] baixarArquivo(Cliente cli, Arquivo arq) throws RemoteException {
 		byte[] dados;
@@ -135,7 +139,7 @@ public class ImplServidor  extends UnicastRemoteObject  implements IServer{
             throw new RuntimeException(e);
         }
 	}
-	
+	//remove o cliente e os arquivos dele da lista
 	@Override
 	public void desconectar(Cliente c) throws RemoteException {
 		
